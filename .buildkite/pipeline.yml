@@ -1,21 +1,16 @@
 ---
+bk_agents_ap3_stg: &bk_agents_ap3_stg
+  queue: "ap3-stg"
 
 steps:
   - block: ":rocket: Deploy (STAGING-MAGENTO-2.4.2)?"
 
   - label: ":php: :package: Package and Deploy to 4f875de389.nxcli.net :mage:"
     command: .buildkite/deploy-nexcess.sh a52f6224_1 4f875de389.nxcli.net 4f875de389.nxcli.net
-    agents:
-      env: stg
-      region: ap-southeast-2
+    agents: *bk_agents_ap3_stg
 
   - block: ":rocket: Deploy (PROD-MAGENTO-2.4.2)?"
 
   - label: ":php: :package: Package and Deploy to eb50a474a0.nxcli.net :mage:"
     command: .buildkite/deploy-nexcess.sh a52f6224_1 4f875de389.nxcli.net eb50a474a0.nxcli.net/html
-    agents:
-      env: stg
-      region: ap-southeast-2
-
-
-
+    agents: *bk_agents_ap3_stg
