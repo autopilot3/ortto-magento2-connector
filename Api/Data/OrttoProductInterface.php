@@ -14,6 +14,8 @@ interface OrttoProductInterface
     const SKU = 'sku';
     const URL = 'url';
     const PRICE = 'price';
+    const FINAL_PRICE = 'final_price';
+    const SPECIAL_PRICE = 'special_price';
     const CALCULATED_PRICE = 'calculated_price';
     const MINIMAL_PRICE = 'minimal_price';
     const WEIGHT = 'weight';
@@ -163,6 +165,37 @@ interface OrttoProductInterface
     * @return float
     */
     public function getPrice();
+
+    /**
+    * Set final price
+    *
+    * @param float $finalPrice
+    * @return $this
+    */
+    public function setFinalPrice($finalPrice);
+
+    /**
+    * Get final price
+    *
+    * @return float
+    */
+    public function getFinalPrice();
+
+     /**
+    * Set special price
+    *
+    * @param float $specialPrice
+    * @return $this
+    */
+    public function setSpecialPrice($specialPrice);
+
+    /**
+    * Get special price
+    *
+    * @return float
+    */
+    public function getSpecialPrice();
+
 
     /**
     * Set calculated price

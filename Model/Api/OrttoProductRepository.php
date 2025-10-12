@@ -103,8 +103,9 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
             ->addWebsiteFilter($scope->getWebsiteId());
 
         if (!empty($checkpoint)) {
-            $collection->addFieldToFilter(ProductInterface::UPDATED_AT, ['gteq' => To::sqlDate($checkpoint)]);
+            $collection->addFieldToFilter(ProductInterface::UPDATED_AT, ['gt' => To::sqlDate($checkpoint)]);
         }
+
         $result = $this->listResponseFactory->create();
         $total = To::int($collection->getSize());
         $result->setTotal($total);
@@ -133,8 +134,7 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
         }
         $productIds = array_unique($productIds, SORT_NUMERIC);
         $collection = $this->productCollectionFactory->create();
-        $collection->addAttributeToSelect('*')
-            ->addIdFilter($productIds);
+        $collection->addAttributeToSelect('*')->addIdFilter($productIds);
 
         $total = To::int($collection->getSize());
         $result->setTotal($total);
@@ -166,6 +166,7 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
     {
         $collection = $this->productCollectionFactory->create();
         $collection->addIdFilter($productId)->addAttributeToSelect('*');
+
         /** @var Product $product */
         $product = $collection->getItemById($productId);
         if (empty($product)) {
@@ -192,6 +193,9 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
         $orttoProduct->setName(html_entity_decode($product->getName()));
         $orttoProduct->setSku($sku);
         $orttoProduct->setPrice(To::float($product->getPrice()));
+        $orttoProduct->setFinalPrice(To::float($product->getFinalPrice()));
+        $orttoProduct->setSpecialPrice(To::float($product->getSpecialPrice()));
+
         $orttoProduct->setMinimalPrice(To::float($product->getMinimalPrice()));
         $orttoProduct->setCalculatedPrice(To::float($product->getCalculatedFinalPrice()));
         $orttoProduct->setUpdatedAt($this->helper->toUTC($product->getUpdatedAt()));
@@ -268,14 +272,14 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
         string $productType,
         string $websiteStockName
     ): array {
-        $result = [
-            self::STOCK_QUANTITY => 0.0,
-            self::IS_IN_STOCK => false,
-        ];
+
         if ($this->checkSourceItemSupport->execute($productType)) {
             $stocks = $this->salableQty->execute($productSKU);
             if (empty($stocks)) {
-                return $result;
+                return [
+                    self::STOCK_QUANTITY => 0.0,
+                    self::IS_IN_STOCK => false,
+                ];
             }
             if (count($stocks) == 1 && isset($stocks[0][self::STOCK_QUANTITY])) {
                 $quantity = To::float($stocks[0][self::STOCK_QUANTITY]);
@@ -288,9 +292,11 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
             if ($websiteStockName != '') {
                 $quantity = 0;
                 foreach ($stocks as $stock) {
-                    if (isset($stock[self::STOCK_NAME])
+                    if (
+                        isset($stock[self::STOCK_NAME])
                         && $stock[self::STOCK_NAME] == $websiteStockName
-                        && isset($stock[self::STOCK_QUANTITY])) {
+                        && isset($stock[self::STOCK_QUANTITY])
+                    ) {
                         $quantity += To::float($stock[self::STOCK_QUANTITY]);
                     }
                 }
@@ -299,23 +305,27 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
                     self::IS_IN_STOCK => $quantity > 0,
                 ];
             }
-        } else {
-            $criteria = $this->stockItemCriteria->create();
-            $criteria->setProductsFilter($productId);
-            $stockItems = $this->stockItemRepository->getList($criteria)->getItems();
-            $quantity = 0;
-            $isInStock = false;
-            foreach ($stockItems as $stockItem) {
-                $quantity += To::float($stockItem->getQty());
-                if (!$isInStock) {
-                    $isInStock = To::bool($stockItem->getIsInStock());
-                }
-            }
             return [
-                self::STOCK_QUANTITY => $quantity,
-                self::IS_IN_STOCK => $isInStock,
+                self::STOCK_QUANTITY => 0.0,
+                self::IS_IN_STOCK => false,
             ];
         }
+
+        $criteria = $this->stockItemCriteria->create();
+        $criteria->setProductsFilter($productId);
+        $stockItems = $this->stockItemRepository->getList($criteria)->getItems();
+        $quantity = 0;
+        $isInStock = false;
+        foreach ($stockItems as $stockItem) {
+            $quantity += To::float($stockItem->getQty());
+            if (!$isInStock) {
+                $isInStock = To::bool($stockItem->getIsInStock());
+            }
+        }
+        return [
+            self::STOCK_QUANTITY => $quantity,
+            self::IS_IN_STOCK => $isInStock,
+        ];
     }
 
     private function getParentIds(int $productId): OrttoProductParentGroupInterface
@@ -341,7 +351,6 @@ class OrttoProductRepository implements OrttoProductRepositoryInterface
                 ->join(['sc' => $salesChannelTable], 'st.stock_id = sc.stock_id', [])
                 ->where('sc.code = ?', $scope->getWebsiteCode());
             return (string)$connection->fetchOne($select);
-
         } catch (\Exception $e) {
             $this->logger->error($e, sprintf("Failed to fetch %s website's stock name", $scope->getWebsiteCode()));
             return '';

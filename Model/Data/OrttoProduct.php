@@ -118,6 +118,30 @@ class OrttoProduct extends DataObject implements OrttoProductInterface
     }
 
     /** @inheirtDoc */
+    public function setFinalPrice($finalPrice)
+    {
+        return $this->setData(self::FINAL_PRICE, $finalPrice);
+    }
+
+    /** @inheirtDoc */
+    public function getFinalPrice()
+    {
+        return To::float($this->getData(self::FINAL_PRICE));
+    }
+
+    /** @inheirtDoc */
+    public function setSpecialPrice($specialPrice)
+    {
+        return $this->setData(self::SPECIAL_PRICE, $specialPrice);
+    }
+
+    /** @inheirtDoc */
+    public function getSpecialPrice()
+    {
+        return To::float($this->getData(self::SPECIAL_PRICE));
+    }
+
+    /** @inheirtDoc */
     public function setCalculatedPrice($calculatedPrice)
     {
         return $this->setData(self::CALCULATED_PRICE, $calculatedPrice);
@@ -301,6 +325,8 @@ class OrttoProduct extends DataObject implements OrttoProductInterface
         $result[self::SKU] = $this->getSku();
         $result[self::URL] = $this->getUrl();
         $result[self::PRICE] = $this->getPrice();
+        $result[self::FINAL_PRICE] = $this->getFinalPrice();
+        $result[self::SPECIAL_PRICE] = $this->getSpecialPrice();
         $result[self::CALCULATED_PRICE] = $this->getCalculatedPrice();
         $result[self::MINIMAL_PRICE] = $this->getMinimalPrice();
         $result[self::WEIGHT] = $this->getWeight();
